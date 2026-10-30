@@ -1,0 +1,23 @@
+name: obj-interp
+on: workflow_dispatch
+
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    outputs:
+      v: ${{ steps.s.outputs.v }}
+    steps:
+      - id: s
+        run: |
+          printf 'v=%s\n' '{"puppeteer_version":"$(echo INJECTED-COMMAND-SUBST)"}' >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
+  b:
+    needs: a
+    runs-on: ubuntu-latest
+    steps:
+      - name: fromJSON object into shell
+        run: |
+          echo "raw-output=[${{ needs.a.outputs.v }}]"
+          PUPPETEER_VERSION=$(echo ${{ fromJSON(needs.a.outputs.v) }} | jq -r '.puppeteer_version') || echo "jq failed: $?"
+          echo "PUPPETEER_VERSION=[${PUPPETEER_VERSION}]"
